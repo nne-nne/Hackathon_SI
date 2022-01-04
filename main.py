@@ -106,9 +106,14 @@ def scan_for_bullets(img, player_pos, distance, width):
     for i in range(width):
         pixel = img[start_pos[0]][start_pos[1]+i][:3]
         if not pixel_bcg(pixel):
-            print()
             return True
     return False
+
+
+def scan_for_bullets_depth(img, player_pos, distance, width, depth, step):
+    for i in range(depth):
+        if scan_for_bullets(img, player_pos, distance + i * step, width):
+            return True
 
 
 def get_image():
@@ -158,7 +163,7 @@ try:
         player_pos = get_player_pos(np_img[height-1], player_color)
         #print(time.time() - start_time)
         #print(player_pos)
-        if scan_for_bullets(np_img, player_pos, 300, 60):
+        if scan_for_bullets_depth(np_img, player_pos, 30, 60, 30, 4):
             #print("run!")
             ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
         else:
