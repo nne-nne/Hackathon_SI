@@ -104,10 +104,16 @@ def scan_for_bullets(img, player_pos, distance, width):
     #print(int(height-1-distance), int(player_pos-width/2))
     start_pos = [int(height-1-distance), int(player_pos-width/2)]
     for i in range(width):
-        pixel = img[start_pos[0]+i][start_pos[1]][:3]
+        pixel = img[start_pos[0]][start_pos[1]+i][:3]
         if not pixel_bcg(pixel):
             return True
     return False
+
+
+def scan_for_bullets_depth(img, player_pos, distance, width, depth, step):
+    for i in range(depth):
+        if scan_for_bullets(img, player_pos, distance + i * step, width):
+            return True
 
 
 def get_image():
@@ -155,13 +161,13 @@ try:
         np_img = get_image()
         #print_board(np_img)
         player_pos = get_player_pos(np_img[height-1], player_color)
-        print(time.time() - start_time)
-        print(player_pos)
-        if scan_for_bullets(np_img, player_pos, 300, 60):
-            print("run!")
+        #print(time.time() - start_time)
+        #print(player_pos)
+        if scan_for_bullets_depth(np_img, player_pos, 30, 60, 30, 4):
+            #print("run!")
             ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
         else:
-            print("uff")
+            #print("uff")
             ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
 
 
