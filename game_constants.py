@@ -4,4 +4,6 @@ actor_size = [60, 20]
 bullet_size = [8, 20]
 bullet_speed = 6
 player_speed = 8
+player_pos = 480
 scanner_dist = int(player_speed*actor_size[0]/2/bullet_speed)
+player_colors = [[255, 0, 0], [255, 255, 255]]
