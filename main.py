@@ -9,6 +9,7 @@ import time
 import PIL.Image
 import base64
 from io import BytesIO
+from intelligence import Action, decide
 
 import re
 import json
@@ -40,7 +41,7 @@ def pixel_eq(pixel, value):
 
 
 def pixel_bcg(pixel):
-    if pixel_eq(pixel, [0, 0, 0]) or pixel_eq(pixel, [20, 20, 20]):
+    if pixel[0] == pixel[1] and pixel[1] == pixel[2]:
         return True
     else:
         return False
@@ -48,8 +49,8 @@ def pixel_bcg(pixel):
 
 def print_board(arr):
     board = ""
-    for row in range(height):
-        for col in range(width):
+    for row in range(master_height):
+        for col in range(master_width):
             pixel = arr[row][col][:3]
             if pixel_bcg(pixel):
                 board += " "
@@ -78,6 +79,10 @@ def get_player_color(bottom_row, player_pos):
     return bottom_row[player_pos]
 
 
+def is_player_cornered(player_pos):
+    return player_pos < actor_size[0] or player_pos > master_width - actor_size[0]
+
+
 def is_bullet_corner(img, pos):
     color = img[pos[0], pos[1]]
     if pixel_bcg(color):
@@ -93,27 +98,42 @@ def is_bullet_corner(img, pos):
 
 def get_bullets_pos(img):
     bullets = []
-    for row in range(int(bullet_size[0]) + 1, height - int(bullet_size[0]) - 1):
-        for col in range(int(bullet_size[1]) + 1, width - int(bullet_size[1]) - 1):
+    for row in range(int(bullet_size[0]) + 1, master_height - int(bullet_size[0]) - 1):
+        for col in range(int(bullet_size[1]) + 1, master_width - int(bullet_size[1]) - 1):
             if is_bullet_corner(img, [row, col]):
                 bullets.append([row + int(bullet_size[0]/2), col + int(bullet_size[1]/2)])
     return bullets
 
 
-def scan_for_bullets(img, player_pos, distance, width):
+def scan_for_bullets_row(img, player_pos, y, width):
     #print(int(height-1-distance), int(player_pos-width/2))
-    start_pos = [int(height-1-distance), int(player_pos-width/2)]
+    start_x = min(0, int(player_pos-width/2))
     for i in range(width):
-        pixel = img[start_pos[0]][start_pos[1]+i][:3]
+        x = start_x + i
+        if x >= master_width:
+            break
+
+        pixel = img[y][x][:3]
         if not pixel_bcg(pixel):
-            return True
-    return False
+            return True, x
+    return False, 0
 
 
-def scan_for_bullets_depth(img, player_pos, distance, width, depth, step):
+def scan_for_bullets(img, player_pos, distance, width, depth, step):
     for i in range(depth):
-        if scan_for_bullets(img, player_pos, distance + i * step, width):
-            return True
+        y = int(master_height - 1 - (distance + i * step))
+        scan_result, x = scan_for_bullets_row(img, player_pos, y, width)
+        if scan_result:
+            return True, (x, y)
+    return False, 0
+
+
+def to_center(player_pos):
+    center_x = master_width / 2
+    if player_pos < center_x:
+        return Action.RIGHT
+    else:
+        return Action.LEFT
 
 
 def get_image():
@@ -134,14 +154,14 @@ np.set_printoptions(threshold=sys.maxsize)
 
 max_time = 120
 
-browser = webdriver.Chrome("C:/Users/adaml/Desktop/Hackathon_SI/chrome/chromedriver_win32/chromedriver.exe")
+browser = webdriver.Chrome("F:/Hackathon/Zad3/Hackathon_SI/chrome/chromedriver_win32/chromedriver.exe")
 
 script = open('game.js', 'r')
 
 start_time = time.time()
 
-width = 960
-height = 540
+master_width = 960
+master_height = 540
 actor_size = [60, 20]
 bullet_size = [8, 20]
 bullet_speed = 6
@@ -151,24 +171,42 @@ scanner_dist = int(player_speed*actor_size[0]/2/bullet_speed)
 checked_bullets = False
 
 try:
-    browser.get('file:///C:/Users/adaml/Desktop/Hackathon_SI/index.html')
+    browser.get('file:///F:/Hackathon/Zad3/Hackathon_SI/index.html')
     time.sleep(0.1)
     np_img = get_image()
-    player_pos = get_player_pos_raw(np_img[height-1])
-    player_color = get_player_color(np_img[height-1], player_pos)
+    player_pos = get_player_pos_raw(np_img[master_height - 1])
+    player_color = get_player_color(np_img[master_height - 1], player_pos)
 
     while time.time() - start_time < max_time:
         np_img = get_image()
         #print_board(np_img)
-        player_pos = get_player_pos(np_img[height-1], player_color)
+        player_pos = get_player_pos(np_img[master_height - 1], player_color)
         #print(time.time() - start_time)
         #print(player_pos)
-        if scan_for_bullets_depth(np_img, player_pos, 30, 60, 30, 4):
-            #print("run!")
-            ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
+        scan_result, bullet_pos = scan_for_bullets(np_img, player_pos, 30, 100, 30, 4)
+        if scan_result:
+            print(bullet_pos[1])
+            if bullet_pos[0] < player_pos:
+                ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
+                ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
+            else:
+                ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
+                ActionChains(browser).key_down(Keys.ARROW_LEFT).perform()
         else:
-            #print("uff")
+            ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
             ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
+
+
+        # action = decide()
+        # if action == Action.LEFT:
+        #     ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
+        #     ActionChains(browser).key_down(Keys.ARROW_LEFT).perform()
+        # elif action == Action.RIGHT:
+        #     ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
+        #     ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
+
+        ActionChains(browser).key_down(Keys.SPACE).perform()
+        ActionChains(browser).key_up(Keys.SPACE).perform()
 
 
 
