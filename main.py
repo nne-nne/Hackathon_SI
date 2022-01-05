@@ -19,41 +19,12 @@ import numpy as np
 import sys
 
 
-#def count_colors(arr):
-#    colors = []
-#    for row in range(height):
-#        for col in range(width):
-#            pixel = arr[row][col][:3]
-#            is_new = True
-#            for color in colors:
-#                if color[0] == pixel[0] and color[1] == pixel[1] and color[2] == pixel[2]:
-#                    is_new = False
-#                    break
-#            if is_new:
-#                colors.append(pixel)
-#
-#    print(colors)
-
-def pixel_eq(pixel, value):
-    if pixel[0] == value[0] and pixel[1] == value[1] and pixel[2] == value[2]:
-        return True
-    else:
-        return False
-
-
-def pixel_bcg(pixel):
-    if pixel[0] == pixel[1] and pixel[1] == pixel[2]:
-        return True
-    else:
-        return False
-
-
 def print_board(arr):
     board = ""
     for row in range(master_height):
         for col in range(master_width):
             pixel = arr[row][col][:3]
-            if pixel_bcg(pixel):
+            if helper.pixel_bcg(pixel):
                 board += " "
             else:
                 board += "*"
@@ -64,7 +35,7 @@ def print_board(arr):
 def get_player_pos_raw(bottom_row):
     for i in range(len(bottom_row)):
         pixel = bottom_row[i]
-        if not pixel_bcg(pixel):
+        if not helper.pixel_bcg(pixel):
             return int(i + actor_size[0]/2)
 
 
@@ -72,7 +43,7 @@ def get_player_pos(bottom_row):
     for i in range(len(bottom_row)):
         pixel = bottom_row[i]
         for color in player_colors:
-            if pixel_eq(pixel, color):
+            if helper.pixel_eq(pixel, color):
                 return int(i + actor_size[0]/2)
     return player_pos
 
@@ -85,28 +56,6 @@ def is_player_cornered(player_pos):
     return player_pos < actor_size[0] or player_pos > master_width - actor_size[0]
 
 
-def is_bullet_corner(img, pos):
-    color = img[pos[0], pos[1]]
-    if pixel_bcg(color):
-        return False
-    if not pixel_eq(img[pos[0]+bullet_size[0], pos[1]], color):
-        return False
-    if pixel_eq(img[pos[0] + bullet_size[0] + 1, pos[1]], color):
-        return False
-    if not pixel_eq(img[pos[0], pos[1] + bullet_size[1]], color):
-        return False
-    return True
-
-
-def get_bullets_pos(img):
-    bullets = []
-    for row in range(int(bullet_size[0]) + 1, master_height - int(bullet_size[0]) - 1):
-        for col in range(int(bullet_size[1]) + 1, master_width - int(bullet_size[1]) - 1):
-            if is_bullet_corner(img, [row, col]):
-                bullets.append([row + int(bullet_size[0]/2), col + int(bullet_size[1]/2)])
-    return bullets
-
-
 def scan_for_bullets_row(img, player_pos, y, width):
     #print(int(height-1-distance), int(player_pos-width/2))
     start_x = max(0, int(player_pos-width/2))
@@ -116,7 +65,7 @@ def scan_for_bullets_row(img, player_pos, y, width):
             break
 
         pixel = img[y][x][:3]
-        if not pixel_bcg(pixel):
+        if not helper.pixel_bcg(pixel):
             return True, x
     return False, 0
 
