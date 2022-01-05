@@ -9,7 +9,8 @@ import time
 import PIL.Image
 import base64
 from io import BytesIO
-from intelligence import Action, decide
+from intelligence import *
+from game_constants import *
 
 import re
 import json
@@ -35,13 +36,6 @@ import sys
 
 def pixel_eq(pixel, value):
     if pixel[0] == value[0] and pixel[1] == value[1] and pixel[2] == value[2]:
-        return True
-    else:
-        return False
-
-
-def pixel_bcg(pixel):
-    if pixel[0] == pixel[1] and pixel[1] == pixel[2]:
         return True
     else:
         return False
@@ -79,10 +73,6 @@ def get_player_color(bottom_row, player_pos):
     return bottom_row[player_pos]
 
 
-def is_player_cornered(player_pos):
-    return player_pos < actor_size[0] or player_pos > master_width - actor_size[0]
-
-
 def is_bullet_corner(img, pos):
     color = img[pos[0], pos[1]]
     if pixel_bcg(color):
@@ -105,35 +95,8 @@ def get_bullets_pos(img):
     return bullets
 
 
-def scan_for_bullets_row(img, player_pos, y, width):
-    #print(int(height-1-distance), int(player_pos-width/2))
-    start_x = max(0, int(player_pos-width/2))
-    for i in range(width):
-        x = start_x + i
-        if x >= master_width:
-            break
-
-        pixel = img[y][x][:3]
-        if not pixel_bcg(pixel):
-            return True, x
-    return False, 0
 
 
-def scan_for_bullets(img, player_pos, distance, width, depth, step):
-    for i in range(depth):
-        y = int(master_height - 1 - (distance + i * step))
-        scan_result, x = scan_for_bullets_row(img, player_pos, y, width)
-        if scan_result:
-            return True, (x, y)
-    return False, 0
-
-
-def to_center(player_pos):
-    center_x = master_width / 2
-    if player_pos < center_x:
-        return Action.RIGHT
-    else:
-        return Action.LEFT
 
 
 def get_image():
@@ -160,14 +123,6 @@ script = open('game.js', 'r')
 
 start_time = time.time()
 
-master_width = 960
-master_height = 540
-actor_size = [60, 20]
-bullet_size = [8, 20]
-bullet_speed = 6
-player_speed = 8
-scanner_dist = int(player_speed*actor_size[0]/2/bullet_speed)
-
 checked_bullets = False
 
 try:
@@ -186,13 +141,16 @@ try:
         scan_result, bullet_pos = scan_for_bullets(np_img, player_pos, 30, 100, 30, 4)
         action = Action.NONE
         if scan_result:
-            print(bullet_pos[1])
-            if bullet_pos[0] < player_pos:
-                action = Action.RIGHT
+            if is_player_cornered(player_pos):
+                action = to_center(player_pos)
             else:
-                action = Action.LEFT
+                if bullet_pos[0] < player_pos:
+                    action = Action.RIGHT
+                else:
+                    action = Action.LEFT
         else:
-            print("No detection: " + str(player_pos))
+            if is_player_cornered(player_pos):
+                action = to_center(player_pos)
 
         # Dispatch action
         if action == Action.RIGHT:
