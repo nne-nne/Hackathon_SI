@@ -100,21 +100,20 @@ try:
         player_pos = get_player_pos(np_img[master_height - 1])
         #print(time.time() - start_time)
         #print(player_pos)
-        scan_result, bullet_pos = scan_for_bullets(np_img, player_pos, 30, 100, 30, 4)
         action = Action.NONE
-        if is_player_cornered(player_pos):
-            action = to_center(player_pos)  # I want to breeaak freeeeee!
-        elif scan_result:
-            if is_player_cornered(player_pos):
-                action = to_center(player_pos)
-            else:
-                if bullet_pos[0] < player_pos:
-                    action = Action.RIGHT
-                else:
-                    action = Action.LEFT
-        else:  # Brak zagrażających pocisków
-            if is_player_cornered(player_pos):
-                action = to_center(player_pos)
+
+
+        danger = immediate_danger(np_img, player_pos)
+        forced_action, safe_action = try_prioritize_immediate(danger)
+        if safe_action != Action.NONE and is_player_cornered(player_pos):
+            action = to_center(player_pos)
+        elif forced_action:
+            action = safe_action
+        else:
+            action = preventive_action(np_img, player_pos)
+            action = danger.redirect_action(action)
+        #else:  # Brak zagrażających pocisków
+            #action = to_center(player_pos)
 
         dispatch_action(action)
 
