@@ -240,6 +240,7 @@ script = open('game.js', 'r')
 
 start_time = time.time()
 
+
 master_width = 960
 master_height = 540
 actor_size = [60, 20]
@@ -260,6 +261,7 @@ frame = 0
 
 enemies = []
 
+
 try:
     browser.get('file:///C:/Users/adaml/Desktop/Hackathon_SI/index.html')
     while time.time() - start_time < max_time:
@@ -271,23 +273,24 @@ try:
         np_img = get_image()
         player_pos = get_player_pos(np_img[master_height - 1])
         scan_result, bullet_pos = scan_for_bullets(np_img, player_pos, 30, 100, 30, 4)
-        if scan_result:
-            if bullet_pos[0] < player_pos:
-                ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
-                ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
+
+        action = Action.NONE
+        if is_player_cornered(player_pos):
+            action = to_center(player_pos)  # I want to breeaak freeeeee!
+        elif scan_result:
+            if is_player_cornered(player_pos):
+                action = to_center(player_pos)
             else:
-                ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
-                ActionChains(browser).key_down(Keys.ARROW_LEFT).perform()
-        else:
-            ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
-            ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
+                if bullet_pos[0] < player_pos:
+                    action = Action.RIGHT
+                else:
+                    action = Action.LEFT
+        else:  # Brak zagrażających pocisków
+            if is_player_cornered(player_pos):
+                action = to_center(player_pos)
 
+        dispatch_action(action)
         update_enemies()
-        # for enemy in enemies:
-        #     print(enemy)
-        #     should_fire_at_enemy(enemy)
-        # print("*")
-
         if should_fire(6):
             ActionChains(browser).key_down(Keys.SPACE).perform()
         else:
