@@ -107,7 +107,7 @@ def get_bullets_pos(img):
 
 def scan_for_bullets_row(img, player_pos, y, width):
     #print(int(height-1-distance), int(player_pos-width/2))
-    start_x = min(0, int(player_pos-width/2))
+    start_x = max(0, int(player_pos-width/2))
     for i in range(width):
         x = start_x + i
         if x >= master_width:
