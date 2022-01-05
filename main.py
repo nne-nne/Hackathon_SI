@@ -8,6 +8,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 import time
 import PIL.Image
 import base64
+import helper
 from io import BytesIO
 from intelligence import Action, decide
 
@@ -67,11 +68,12 @@ def get_player_pos_raw(bottom_row):
             return int(i + actor_size[0]/2)
 
 
-def get_player_pos(bottom_row, player_color):
+def get_player_pos(bottom_row):
     for i in range(len(bottom_row)):
         pixel = bottom_row[i]
-        if pixel_eq(pixel, player_color):
-            return int(i + actor_size[0]/2)
+        for color in player_colors:
+            if pixel_eq(pixel, color):
+                return int(i + actor_size[0]/2)
     return player_pos
 
 
@@ -166,26 +168,23 @@ actor_size = [60, 20]
 bullet_size = [8, 20]
 bullet_speed = 6
 player_speed = 8
+player_pos = 480
 scanner_dist = int(player_speed*actor_size[0]/2/bullet_speed)
+player_colors = [[255, 0, 0], [255, 255, 255]]
 
 checked_bullets = False
 
 try:
     browser.get('file:///C:/Users/adaml/Desktop/Hackathon_SI/index.html')
-    time.sleep(0.1)
-    np_img = get_image()
-    player_pos = get_player_pos_raw(np_img[master_height - 1])
-    player_color = get_player_color(np_img[master_height - 1], player_pos)
-
     while time.time() - start_time < max_time:
         np_img = get_image()
         #print_board(np_img)
-        player_pos = get_player_pos(np_img[master_height - 1], player_color)
+        player_pos = get_player_pos(np_img[master_height - 1])
         #print(time.time() - start_time)
         #print(player_pos)
         scan_result, bullet_pos = scan_for_bullets(np_img, player_pos, 30, 100, 30, 4)
         if scan_result:
-            print(bullet_pos[1])
+            #print(bullet_pos[1])
             if bullet_pos[0] < player_pos:
                 ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
                 ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
