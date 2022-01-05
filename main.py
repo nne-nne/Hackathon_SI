@@ -32,18 +32,6 @@ import sys
 #
 #    print(colors)
 
-class Enemy:
-    def __init__(self, _color, _position):
-        self.color = _color
-        self.position = _position
-        self.direction = 0
-        self.x_speed = 0
-        self.y_speed = 0
-
-    def __str__(self):
-        return str(self.color) + " at: " + str(self.position)
-
-
 def pixel_eq(pixel, value):
     if pixel[0] == value[0] and pixel[1] == value[1] and pixel[2] == value[2]:
         return True
@@ -56,43 +44,6 @@ def pixel_bcg(pixel):
         return True
     else:
         return False
-
-
-def pixel_achromatic(pixel):
-    if abs(pixel[0] - pixel[1]) < achromatic_margin:
-        if abs(pixel[1] - pixel[2]) < achromatic_margin:
-            if abs(pixel[0] - pixel[2]) < achromatic_margin:
-                return True
-    return False
-
-
-def get_pixel_similarities(p1, p2):
-    proportions1 = get_color_proportions(p1)
-    proportions2 = get_color_proportions(p2)
-    vec_sim = []
-    for a in range(len(proportions1)):
-        vec_sim.append(abs(proportions2[a] - proportions1[a]))
-    return vec_sim
-
-
-def pixels_similar(p1, p2, similarity):
-    vec_sim = get_pixel_similarities(p1, p2)
-    for e in vec_sim:
-        if e > similarity:
-            return False
-    return True
-
-
-def get_color_proportions(color):
-    total = get_color_total(color)
-    if total == 0:
-        return [-100, -100, -100]
-    fracs = [color[0] / total, color[1] / total, color[2] / total]
-    return fracs
-
-
-def get_color_total(color):
-    return int(color[0]) + int(color[1]) + int(color[2])
 
 
 def print_board(arr):
@@ -173,28 +124,6 @@ def get_image():
     return np.array(img)
 
 
-def detect_enemies(img, rows):
-    for row in rows:
-        last_enemy_pos = 0
-        enemy_color = [0, 0, 0]  # not found
-        for col in range(width-1):
-            color = img[row][col]
-            if not pixel_bcg(color) and not pixel_achromatic(color): # wykryto coś co nie jest tłem
-                if not (pixel_eq(color, enemy_color) and col - last_enemy_pos < actor_size[0]): # nowy przeciwnik
-                    enemies.append(Enemy(color, [row, col]))
-                    print(last_enemy_pos, col)
-                    print(enemy_color, " ", color)
-                    print(get_pixel_similarities(enemy_color, color))
-                    last_enemy_pos = col
-                    enemy_color = color
-
-
-def print_enemies():
-    for enemy in enemies:
-        print(enemy)
-    print("*")
-
-
 jss = '''
         var canvas = document.getElementById("game");
         return canvas.toDataURL("image/png");
@@ -211,16 +140,13 @@ script = open('game.js', 'r')
 
 start_time = time.time()
 
-enemies = []
 width = 960
 height = 540
 actor_size = [60, 20]
 bullet_size = [8, 20]
 bullet_speed = 6
 player_speed = 8
-achromatic_margin = 5
 scanner_dist = int(player_speed*actor_size[0]/2/bullet_speed)
-enemy_detection_rows = [19, 39, 59]
 
 checked_bullets = False
 
@@ -230,8 +156,6 @@ try:
     np_img = get_image()
     player_pos = get_player_pos_raw(np_img[height-1])
     player_color = get_player_color(np_img[height-1], player_pos)
-    detect_enemies(np_img, enemy_detection_rows)
-    print_enemies()
 
     while time.time() - start_time < max_time:
         np_img = get_image()
@@ -245,6 +169,8 @@ try:
         else:
             #print("uff")
             ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
+
+
 
 finally:
     browser.close()
