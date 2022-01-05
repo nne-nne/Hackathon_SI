@@ -171,7 +171,7 @@ scanner_dist = int(player_speed*actor_size[0]/2/bullet_speed)
 checked_bullets = False
 
 try:
-    browser.get('file:///F:/Hackathon/Zad3/Hackathon_SI/index.html')
+    browser.get('file:///C:/Users/adaml/Desktop/Hackathon_SI/index.html')
     time.sleep(0.1)
     np_img = get_image()
     player_pos = get_player_pos_raw(np_img[master_height - 1])
