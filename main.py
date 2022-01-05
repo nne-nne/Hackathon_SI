@@ -154,7 +154,7 @@ np.set_printoptions(threshold=sys.maxsize)
 
 max_time = 120
 
-browser = webdriver.Chrome("F:/Hackathon/Zad3/Hackathon_SI/chrome/chromedriver_win32/chromedriver.exe")
+browser = webdriver.Chrome("C:/Users/adaml/Desktop/Hackathon_SI/chrome/chromedriver_win32/chromedriver.exe")
 
 script = open('game.js', 'r')
 
