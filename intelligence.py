@@ -2,9 +2,9 @@ import enum
 from game_constants import *
 
 
-DANGER_TOLERANCE = 3
+DANGER_TOLERANCE = 5
 PREDICTION_FRAMECOUNT = 1  # liczba ramek w przód, na którą trzeba złożyć przewidywania
-CORNERED_TOLERANCE = 4
+CORNERED_TOLERANCE = 6
 
 
 class Action(enum.Enum):
@@ -151,7 +151,7 @@ def try_prioritize_immediate(immediate_report: ImmediateDangerReport):
 
 def preventive_action(img, player_pos):
     """Decyzje, które podejmuje bot, gdy nie ma bezpośrednich zagrożeń"""
-    scan_result, bullet_pos = scan_for_bullets(img, player_pos, 30, player_width + 10, 30, 4)
+    scan_result, bullet_pos = scan_for_bullets(img, player_pos, 30, 100, 30, 4)
     if not scan_result:
         return Action.NONE
 
