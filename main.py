@@ -107,7 +107,7 @@ def get_bullets_pos(img):
 
 def scan_for_bullets_row(img, player_pos, y, width):
     #print(int(height-1-distance), int(player_pos-width/2))
-    start_x = min(0, int(player_pos-width/2))
+    start_x = max(0, int(player_pos-width/2))
     for i in range(width):
         x = start_x + i
         if x >= master_width:
@@ -184,17 +184,27 @@ try:
         #print(time.time() - start_time)
         #print(player_pos)
         scan_result, bullet_pos = scan_for_bullets(np_img, player_pos, 30, 100, 30, 4)
+        action = Action.NONE
         if scan_result:
             print(bullet_pos[1])
             if bullet_pos[0] < player_pos:
-                ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
-                ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
+                action = Action.RIGHT
             else:
-                ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
-                ActionChains(browser).key_down(Keys.ARROW_LEFT).perform()
+                action = Action.LEFT
+        else:
+            print("No detection: " + str(player_pos))
+
+        # Dispatch action
+        if action == Action.RIGHT:
+            ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
+            ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
+        elif action == Action.LEFT:
+            ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
+            ActionChains(browser).key_down(Keys.ARROW_LEFT).perform()
         else:
             ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
             ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
+
 
 
         # action = decide()
