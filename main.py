@@ -265,7 +265,7 @@ try:
 
         dispatch_action(action)
         update_enemies()
-        if should_fire(6):
+        if should_fire(10):
             ActionChains(browser).key_down(Keys.SPACE).perform()
         else:
             ActionChains(browser).key_up(Keys.SPACE).perform()
