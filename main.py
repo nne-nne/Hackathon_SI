@@ -10,9 +10,7 @@ import PIL.Image
 import base64
 import helper
 from io import BytesIO
-from intelligence import *
-from game_constants import *
-import os
+from intelligence import Action, decide
 
 import numpy as np
 import sys
@@ -120,16 +118,39 @@ def get_player_color(bottom_row, player_pos):
     return bottom_row[player_pos]
 
 
-def dispatch_action(action):
-    if action == Action.RIGHT:
-        ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
-        ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
-    elif action == Action.LEFT:
-        ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
-        ActionChains(browser).key_down(Keys.ARROW_LEFT).perform()
+def is_player_cornered(player_pos):
+    return player_pos < actor_size[0] or player_pos > master_width - actor_size[0]
+
+
+def scan_for_bullets_row(img, player_pos, y, width):
+    #print(int(height-1-distance), int(player_pos-width/2))
+    start_x = max(0, int(player_pos-width/2))
+    for i in range(width):
+        x = start_x + i
+        if x >= master_width:
+            break
+
+        pixel = img[y][x][:3]
+        if not helper.pixel_bcg(pixel):
+            return True, x
+    return False, 0
+
+
+def scan_for_bullets(img, player_pos, distance, width, depth, step):
+    for i in range(depth):
+        y = int(master_height - 1 - (distance + i * step))
+        scan_result, x = scan_for_bullets_row(img, player_pos, y, width)
+        if scan_result:
+            return True, (x, y)
+    return False, 0
+
+
+def to_center(player_pos):
+    center_x = master_width / 2
+    if player_pos < center_x:
+        return Action.RIGHT
     else:
-        ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
-        ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
+        return Action.LEFT
 
 
 def get_image():
@@ -213,16 +234,34 @@ np.set_printoptions(threshold=sys.maxsize)
 
 max_time = 120
 
-browser = webdriver.Chrome(os.path.abspath("chrome/chromedriver_win32/chromedriver.exe"))
+browser = webdriver.Chrome("C:/Users/adaml/Desktop/Hackathon_SI/chrome/chromedriver_win32/chromedriver.exe")
 
 script = open('game.js', 'r')
 
 start_time = time.time()
 
-checked_bullets = False
+master_width = 960
+master_height = 540
+actor_size = [60, 20]
+bullet_size = [8, 20]
+bullet_speed = 6
+player_speed = 8
+player_bullet_speed = 8
+player_pos = 480
+scanner_dist = int(player_speed*actor_size[0]/2/bullet_speed)
+player_colors = [[255, 0, 0], [255, 255, 255]]
+enemy_x_speeds = [-3, -2, 2, 3]
+enemy_y_speeds = [0.1, 0.2, 0.3]
+fps = 50
+
+prev_enemy_centre = [0, 0]
+prev_aim_pos = [0, 0]
+frame = 0
+
+enemies = []
 
 try:
-    browser.get('file:///' + os.path.abspath("index.html"))
+    browser.get('file:///C:/Users/adaml/Desktop/Hackathon_SI/index.html')
     while time.time() - start_time < max_time:
         nframe = int((time.time() - start_time) * fps)
         dframe = nframe - frame
@@ -232,28 +271,27 @@ try:
         np_img = get_image()
         player_pos = get_player_pos(np_img[master_height - 1])
         scan_result, bullet_pos = scan_for_bullets(np_img, player_pos, 30, 100, 30, 4)
-        action = Action.NONE
-        if is_player_cornered(player_pos):
-            action = to_center(player_pos)  # I want to breeaak freeeeee!
-        elif scan_result:
-            if is_player_cornered(player_pos):
-                action = to_center(player_pos)
+        if scan_result:
+            if bullet_pos[0] < player_pos:
+                ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
+                ActionChains(browser).key_down(Keys.ARROW_RIGHT).perform()
             else:
-                if bullet_pos[0] < player_pos:
-                    action = Action.RIGHT
-                else:
-                    action = Action.LEFT
-        else:  # Brak zagrażających pocisków
-            if is_player_cornered(player_pos):
-                action = to_center(player_pos)
+                ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
+                ActionChains(browser).key_down(Keys.ARROW_LEFT).perform()
+        else:
+            ActionChains(browser).key_up(Keys.ARROW_LEFT).perform()
+            ActionChains(browser).key_up(Keys.ARROW_RIGHT).perform()
 
-        dispatch_action(action)
+        update_enemies()
+        # for enemy in enemies:
+        #     print(enemy)
+        #     should_fire_at_enemy(enemy)
+        # print("*")
 
-        # Shooting
-        ActionChains(browser).key_down(Keys.SPACE).perform()
-        ActionChains(browser).key_up(Keys.SPACE).perform()
-
-
+        if should_fire(6):
+            ActionChains(browser).key_down(Keys.SPACE).perform()
+        else:
+            ActionChains(browser).key_up(Keys.SPACE).perform()
 
 finally:
     browser.close()
